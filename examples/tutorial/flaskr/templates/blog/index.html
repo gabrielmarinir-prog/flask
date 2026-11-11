@@ -1,28 +1,38 @@
 {% extends 'base.html' %}
 
-{% block header %}
-  <h1>{% block title %}Posts{% endblock %}</h1>
-  {% if g.user %}
-    <a class="action" href="{{ url_for('blog.create') }}">New</a>
-  {% endif %}
-{% endblock %}
-
 {% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2>Posts Recentes</h2>
+  {% if g.user %}
+    <a class="btn btn-success" href="{{ url_for('blog.create') }}">Novo Post</a>
+  {% endif %}
+</div>
+
+<div class="row row-cols-1 row-cols-md-2 g-4">
   {% for post in posts %}
-    <article class="post">
-      <header>
-        <div>
-          <h1>{{ post['title'] }}</h1>
-          <div class="about">by {{ post['username'] }} on {{ post['created'].strftime('%Y-%m-%d') }}</div>
-        </div>
-        {% if g.user['id'] == post['author_id'] %}
-          <a class="action" href="{{ url_for('blog.update', id=post['id']) }}">Edit</a>
+    <div class="col">
+      <div class="card h-100 shadow-sm">
+        {% if post.imagem_post %}
+          <img src="{{ url_for('static', filename='uploads/' + post.imagem_post) }}" class="card-img-top" style="height: 220px; object-fit: cover;">
         {% endif %}
-      </header>
-      <p class="body">{{ post['body'] }}</p>
-    </article>
-    {% if not loop.last %}
-      <hr>
-    {% endif %}
+        <div class="card-body">
+          <h5 class="card-title">{{ post.title }}</h5>
+          <p class="card-text text-muted small">
+            Por <strong>{{ post.author.username }}</strong> em {{ post.created.strftime('%d/%m/%Y') }}
+          </p>
+          <p class="card-text">{{ post.body }}</p>
+        </div>
+        {% if g.user and g.user.id == post.author_id %}
+          <div class="card-footer bg-transparent border-top-0 text-end">
+            <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('blog.update', id=post.id) }}">Editar</a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  {% else %}
+    <div class="col-12">
+      <p class="text-muted">Nenhum post cadastrado ainda.</p>
+    </div>
   {% endfor %}
+</div>
 {% endblock %}

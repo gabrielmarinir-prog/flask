@@ -1,19 +1,43 @@
 {% extends 'base.html' %}
 
 {% block header %}
-  <h1>{% block title %}Edit "{{ post['title'] }}"{% endblock %}</h1>
+  <h1>{% block title %}Editar "{{ post.title }}"{% endblock %}</h1>
 {% endblock %}
 
 {% block content %}
-  <form method="post">
-    <label for="title">Title</label>
-    <input name="title" id="title" value="{{ request.form['title'] or post['title'] }}" required>
-    <label for="body">Body</label>
-    <textarea name="body" id="body">{{ request.form['body'] or post['body'] }}</textarea>
-    <input type="submit" value="Save">
-  </form>
-  <hr>
-  <form action="{{ url_for('blog.delete', id=post['id']) }}" method="post">
-    <input class="danger" type="submit" value="Delete" onclick="return confirm('Are you sure?');">
-  </form>
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <form method="post" enctype="multipart/form-data">
+          <div class="mb-3">
+            <label for="title" class="form-label">Título</label>
+            <input name="title" id="title" class="form-control" value="{{ request.form['title'] or post.title }}" required>
+          </div>
+          <div class="mb-3">
+            <label for="body" class="form-label">Conteúdo</label>
+            <textarea name="body" id="body" class="form-control" rows="5">{{ request.form['body'] or post.body }}</textarea>
+          </div>
+          <div class="mb-3">
+            <label for="imagem_post" class="form-label">Alterar Imagem do Post (Opcional)</label>
+            <input type="file" name="imagem_post" id="imagem_post" class="form-control" accept="image/*">
+            {% if post.imagem_post %}
+              <div class="mt-2 small text-muted">
+                Imagem atual: <strong>{{ post.imagem_post }}</strong>
+              </div>
+            {% endif %}
+          </div>
+          <div class="d-flex justify-content-between">
+            <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+        </form>
+        
+        <!-- Formulário separado para Exclusão -->
+        <form action="{{ url_for('blog.delete', id=post.id) }}" method="post" onsubmit="return confirm('Tem certeza que deseja excluir este post?');">
+          <button type="submit" class="btn btn-danger">Excluir Post</button>
+        </form>
+          </div>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
