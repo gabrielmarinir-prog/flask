@@ -1,74 +1,44 @@
-import functools
 import os
-
 from flask import (
-    Blueprint, current_app, flash, g, redirect, render_template, request, session, url_for
+    Blueprint, flash, g, redirect, render_template, request, session, url_for, current_app
 )
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
-from sqlalchemy.exc import IntegrityError
-
-# Importa o db e o modelo User definidos em models.py
 from flaskr.models import db, User
 
-bp = Blueprint("auth", __name__, url_prefix="/auth")
+bp = Blueprint('auth', __name__, url_prefix='/auth')
 
-
-def login_required(view):
-    """View decorator que redireciona usuários não autenticados para o login."""
-    @functools.wraps(view)
-    def wrapped_view(**kwargs):
-        if g.user is None:
-            return redirect(url_for("auth.login"))
-        return view(**kwargs)
-
-    return wrapped_view
-
-
-@bp.before_app_request
-def load_logged_in_user():
-    """Carrega o usuário logado do banco de dados para g.user."""
-    user_id = session.get("user_id")
-
-    if user_id is None:
-        g.user = None
-    else:
-        # Sintaxe SQLAlchemy substituindo a consulta SQL pura
-        g.user = db.session.get(User, user_id)
-
-
-@bp.route("/register", methods=("GET", "POST"))
+@bp.route('/register', methods=('GET', 'POST'))
 def register():
-    """Registra um novo usuário com upload de foto de perfil (avatar)."""
-    if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
-        avatar_file = request.files.get("avatar")
-        filename = None
-
-        # Trata o upload da foto de perfil
-        if avatar_file and avatar_file.filename != '':
-            filename = secure_filename(avatar_file.filename)
-            avatar_file.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
-
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        avatar_file = request.files.get('avatar')
         error = None
 
         if not username:
-            error = "Username is required."
+            error = 'Username is required.'
         elif not password:
-            error = "Password is required."
+            error = 'Password is required.'
 
         if error is None:
+            filename = None
+            if avatar_file and avatar_file.filename != '':
+                filename = secure_filename(avatar_file.filename)
+                upload_folder = os.path.join(current_app.root_path, 'static', 'uploads')
+                os.makedirs(upload_folder, exist_ok=True)
+                avatar_file.save(os.path.join(upload_folder, filename))
+
+            # Cria nova instância do modelo User
+            user = User(
+                username=username,
+                password=generate_password_hash(password),
+                avatar=filename
+            )
             try:
-                # Cria a instância da classe User (Model)
-                user = User(
-                    username=username,
-                    password=generate_password_hash(password),
-                    avatar=filename or 'default_avatar.png'
-                )
                 db.session.add(user)
                 db.session.commit()
-            except IntegrityError:
+            except db.exc.IntegrityError:
                 db.session.rollback()
                 error = f"User {username} is already registered."
             else:
@@ -76,37 +46,45 @@ def register():
 
         flash(error)
 
-    return render_template("auth/register.html")
+    return render_template('auth/register.html')
 
 
-@bp.route("/login", methods=("GET", "POST"))
+@bp.route('/login', methods=('GET', 'POST'))
 def login():
-    """Autentica o usuário utilizando a busca por SQLAlchemy."""
-    if request.method == "POST":
-        username = request.form["username"]
-        password = request.form["password"]
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
         error = None
 
-        # Busca o usuário pelo username via SQLAlchemy
+        # Busca o usuário usando a sintaxe do SQLAlchemy
         user = User.query.filter_by(username=username).first()
 
         if user is None:
-            error = "Incorrect username."
+            error = 'Incorrect username.'
         elif not check_password_hash(user.password, password):
-            error = "Incorrect password."
+            error = 'Incorrect password.'
 
         if error is None:
             session.clear()
-            session["user_id"] = user.id
-            return redirect(url_for("index"))
+            session['user_id'] = user.id
+            return redirect(url_for('index'))
 
         flash(error)
 
-    return render_template("auth/login.html")
+    return render_template('auth/login.html')
 
 
-@bp.route("/logout")
+@bp.before_app_request
+def load_logged_in_user():
+    user_id = session.get('user_id')
+
+    if user_id is None:
+        g.user = None
+    else:
+        g.user = User.query.get(user_id)
+
+
+@bp.route('/logout')
 def logout():
-    """Limpa a sessão atual."""
     session.clear()
-    return redirect(url_for("index"))
+    return redirect(url_for('index'))

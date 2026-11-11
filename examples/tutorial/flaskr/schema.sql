@@ -1,13 +1,11 @@
--- Initialize the database.
--- Drop any existing data and create empty tables.
-
-DROP TABLE IF EXISTS user;
 DROP TABLE IF EXISTS post;
+DROP TABLE IF EXISTS user;
 
 CREATE TABLE user (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   username TEXT UNIQUE NOT NULL,
-  password TEXT NOT NULL
+  password TEXT NOT NULL,
+  avatar TEXT
 );
 
 CREATE TABLE post (
@@ -16,5 +14,6 @@ CREATE TABLE post (
   created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   title TEXT NOT NULL,
   body TEXT NOT NULL,
+  imagem_post TEXT,
   FOREIGN KEY (author_id) REFERENCES user (id)
 );
